@@ -1,44 +1,54 @@
-from clarisse_survival_kit.settings import *
-from clarisse_survival_kit.app import *
 from clarisse_survival_kit.utility import *
-import logging
-import os
 
 
 def preferences_list():
-    preferences = {}
-    preferences['global_shading_layer'] = {'description': 'Global Shading Layer', 'kind': 'ShadingLayer'}
-    preferences['megascans_context'] = {'description': 'Context for imported Megascans assets', 'kind': 'OfContext'}
+    preferences = [{'key': 'global_shading_layer', 'description': 'Global Shading Layer', 'kind': 'ShadingLayer'},
+                   {'key': 'combiner_context', 'description': 'Context for combiner collection', 'kind': 'OfContext'},
+                   {'key': 'megascans_context', 'description': 'Context for imported Megascans assets',
+                    'kind': 'OfContext'}]
     return preferences
 
 
 def preferences_gui(**kwargs):
     ix = get_ix(kwargs.get('ix'))
     preferences = preferences_list()
+
     class EventRewire(ix.api.EventObject):
-        # These are the called functions by the connect. It is more flexible to make a function for each button
         def ok(self, sender, evtid):
-            sender.get_window().hide()  # Hide the window, if it is done, the window is destroy
-            for key in preferences:
-                set_preference(key, line_edits[key].get_text())
+            self.apply(self, sender, evtid)
+            sender.get_window().hide()
+
+        def apply(self, sender, evtid):
+            for pref_id in range(len(preferences)):
+                key = preferences[pref_id]['key']
+                set_preference(key, line_edits[pref_id].get_text())
+            ok_button.disable()
+            apply_button.disable()
 
         def cancel(self, sender, evtid):
-            sender.get_window().hide()  # Hide the window, if it is done, the window is destroy
+            sender.get_window().hide()
 
-        def set_preference(self, key):
-            if check_selection(ix.selection, (preferences[key]['kind'],)):
-                line_edits[key].set_text(str(ix.selection[0]))
+        def enable_apply_buttons(self, sender, evtid):
+            ok_button.enable()
+            apply_button.enable()
 
-        def clear_preference(self, key):
-            line_edits[key].set_text('')
+        def set_preference(self, sender, evtid, id):
+            if check_selection(ix.selection, (preferences[id]['kind'],)):
+                line_edits[id].set_text(str(ix.selection[0]))
+            self.enable_apply_buttons(sender, evtid)
+
+        def clear_preference(self, sender, evtid, id):
+            line_edits[id].set_text('')
+            ok_button.enable()
+            apply_button.enable()
 
         def buttonClick(self, sender, evtid):
             if 'set_' in sender.identifier:
-                key = sender.identifier.replace('set_', '')
-                self.set_preference(key)
+                id = int(sender.identifier.replace('set_', ''))
+                self.set_preference(sender, evtid, id)
             if 'clear' in sender.identifier:
-                key = sender.identifier.replace('clear_', '')
-                self.clear_preference(key)
+                id = int(sender.identifier.replace('clear_', ''))
+                self.clear_preference(sender, evtid, id)
 
     class GuiPushButton(ix.api.GuiPushButton):
         def __init__(self, identifier, *args, **kwargs):
@@ -51,14 +61,15 @@ def preferences_gui(**kwargs):
             event_rewire.buttonClick(self, evtid)
 
     # Window creation
-    vertical_spacing = 20
-    i = 1
-    line_edits = {}
-    set_buttons = {}
+    vertical_spacing = 26
+    labels = []
+    line_edits = []
+    set_buttons = []
+    clear_buttons = []
     event_rewire = EventRewire()
 
     clarisse_win = ix.application.get_event_window()
-    window = ix.api.GuiWindow(clarisse_win, 900, 450, 554, 520)
+    window = ix.api.GuiWindow(clarisse_win, 900, 450, 525, (len(preferences)+4) * 44 + 10)
     window.set_title('Clarisse Survival Kit Preferences')
 
     # Main widget creation
@@ -67,25 +78,36 @@ def preferences_gui(**kwargs):
                           ix.api.GuiWidget.CONSTRAINT_RIGHT, ix.api.GuiWidget.CONSTRAINT_BOTTOM)
 
     # Form generation
-    for key in preferences:
-        ix.api.GuiLabel(panel, 10, vertical_spacing * i, 400, 22, preferences[key]['description'])
-        i += 1
-        line_edits[key] = ix.api.GuiLineEdit(panel, 10, vertical_spacing * i, 340, 22)
-        line_edits[key].set_text(get_preference(key, ''))
-        set_buttons['set_{key}'.format(key=key)] = GuiPushButton('set_{key}'.format(key=key), panel, 360,
-                                                                 vertical_spacing * i, 90, 22, "Set to selected")
-        set_buttons['set_{key}'.format(key=key)] = GuiPushButton('clear_{key}'.format(key=key), panel, 454,
-                                                                 vertical_spacing * i, 90, 22, "Clear")
-        i += 1
-    i += 1
-    ok_button = ix.api.GuiPushButton(panel, 10, vertical_spacing * i, 100, 22, "OK")
+    ui_id = 1
+    pref_id = 0
+    for pref_id in range(len(preferences)):
+        key = preferences[pref_id]['key']
+        labels.append(
+            ix.api.GuiLabel(panel, 10, vertical_spacing * ui_id + 4, 400, 22, preferences[pref_id]['description']))
+        ui_id += 1
+        line_edits.append(ix.api.GuiLineEdit(panel, 10, vertical_spacing * ui_id, 340, 22))
+        line_edits[pref_id].set_text(get_preference(key, ''))
+        event_rewire.connect(line_edits[pref_id], 'EVT_ID_LINE_EDIT_VALUE_EDITED',
+                             event_rewire.enable_apply_buttons)
+        set_buttons.append(GuiPushButton('set_{id}'.format(id=pref_id), panel, 360,
+                                         vertical_spacing * ui_id, 90, 22, "Set to selected"))
+        clear_buttons.append(GuiPushButton('clear_{id}'.format(id=pref_id), panel, 455,
+                                           vertical_spacing * ui_id, 60, 22, "Clear"))
+        ui_id += 1
+    ui_id += 3
+    ok_button = ix.api.GuiPushButton(panel, 220, vertical_spacing * ui_id, 95, 22, "OK")
     event_rewire.connect(ok_button, 'EVT_ID_PUSH_BUTTON_CLICK', event_rewire.ok)
-    cancel_button = ix.api.GuiPushButton(panel, 120, vertical_spacing * i, 100, 22, "Cancel")
+    ok_button.disable()
+    cancel_button = ix.api.GuiPushButton(panel, 320, vertical_spacing * ui_id, 95, 22, "Cancel")
     event_rewire.connect(cancel_button, 'EVT_ID_PUSH_BUTTON_CLICK', event_rewire.cancel)
+    apply_button = ix.api.GuiPushButton(panel, 420, vertical_spacing * ui_id, 95, 22, "Apply")
+    event_rewire.connect(apply_button, 'EVT_ID_PUSH_BUTTON_CLICK', event_rewire.apply)
+    apply_button.disable()
 
     # Send all info to clarisse to generate window
     window.show()
-    while window.is_shown():    ix.application.check_for_events()
+    while window.is_shown():
+        ix.application.check_for_events()
     window.destroy()
 
 
