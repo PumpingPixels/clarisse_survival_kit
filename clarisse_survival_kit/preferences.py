@@ -2,10 +2,19 @@ from clarisse_survival_kit.utility import *
 
 
 def preferences_list():
-    preferences = [{'key': 'global_shading_layer', 'description': 'Global Shading Layer', 'kind': 'ShadingLayer'},
-                   {'key': 'combiner_context', 'description': 'Context for combiner collection', 'kind': 'OfContext'},
-                   {'key': 'megascans_context', 'description': 'Context for imported Megascans assets',
-                    'kind': 'OfContext'}]
+    preferences = []
+    preferences.append({'key': 'contextname_format', 'description': 'Customize Contextname Format', 'kind': str})
+    preferences.append({'key': 'override_bridge_settings', 'description': 'Override Bridge Export settings to highest available quality', 'kind': bool})
+    # preferences.append({'key': 'global_shading_layer', 'description': 'Global Shading Layer', 'kind': 'ShadingLayer'})
+    # preferences.append(
+    #     {'key': 'combiner_context', 'description': 'Context for collect combiners containig 3d assets',
+    #      'kind': 'OfContext'})
+    # preferences.append(
+    #     {'key': 'megascans_surface_context', 'description': 'Context for imported Megascans surfaces', 'kind': 'OfContext'})
+    # preferences.append(
+    #     {'key': 'megascans_3d_context', 'description': 'Context for imported Megascans 3D asset', 'kind': 'OfContext'})
+    # preferences.append(
+    #     {'key': 'megascans_3dplant_context', 'description': 'Context for imported Megascans 3D plants', 'kind': 'OfContext'})
     return preferences
 
 
@@ -69,7 +78,7 @@ def preferences_gui(**kwargs):
     event_rewire = EventRewire()
 
     clarisse_win = ix.application.get_event_window()
-    window = ix.api.GuiWindow(clarisse_win, 900, 450, 525, (len(preferences)+4) * 44 + 10)
+    window = ix.api.GuiWindow(clarisse_win, 900, 450, 525, (len(preferences) + 4) * 44 + 10)
     window.set_title('Clarisse Survival Kit Preferences')
 
     # Main widget creation

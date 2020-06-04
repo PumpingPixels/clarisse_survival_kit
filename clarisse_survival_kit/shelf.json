@@ -108,6 +108,12 @@
       "description": "Imports a heightmap and displaces it on a polygrid. Can also generate a low resolution proxy.",
       "script_filename": "terrain.py",
       "icon_filename": "terrain.png"
+    },
+    {
+      "title": "Preferences",
+      "description": "Set CSK specific preferences.",
+      "script_filename": "preferences.py",
+      "icon_filename": "preferences.png"
     }
   ]
 }
