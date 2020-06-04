@@ -82,7 +82,7 @@ def get_textures_from_directory(directory, filename_match_template=FILENAME_MATC
                     match = re.search(pattern, filename, re.IGNORECASE)
                     if match:
                         logging.debug("Image matches with: " + str(key))
-                        if resolution and resolution not in filename:
+                        if resolution and resolution not in filename and not 'preview' in filename.lower():
                             logging.debug("Found texture but without specified resolution: " + str(filename))
                             continue
                         lod_match = re.search(lod_match_template, filename, re.IGNORECASE)
@@ -321,7 +321,7 @@ def get_sub_contexts(ctx, name="", max_depth=0, current_depth=0, **kwargs):
         sub_context = ctx.get_context(i)
         results.append(sub_context)
         # 0 is infinite
-        if current_depth <= max_depth or max_depth == 0:
+        if current_depth < max_depth or max_depth == 0:
             for result in get_sub_contexts(sub_context, name, max_depth, current_depth, ix=ix):
                 if result not in results:
                     results.append(result)
@@ -333,13 +333,15 @@ def get_sub_contexts(ctx, name="", max_depth=0, current_depth=0, **kwargs):
     return results
 
 
-def get_items(ctx, kind=(), max_depth=0, current_depth=0, return_first_hit=False, **kwargs):
+def get_items(ctx, kind=(), max_depth=0, return_first_hit=False, **kwargs):
     """Gets all items recursively."""
     ix = get_ix(kwargs.get("ix"))
     result = []
+    current_depth = 1
     items = ix.api.OfItemVector()
-    sub_ctxs = get_sub_contexts(ctx, max_depth=max_depth, current_depth=current_depth, ix=ix)
-    sub_ctxs.insert(0, ctx)
+    sub_ctxs = [ctx]
+    if max_depth > 1 or max_depth == 0:
+        sub_ctxs.extend(get_sub_contexts(ctx, max_depth=max_depth, current_depth=current_depth, ix=ix))
     for sub_ctx in sub_ctxs:
         if sub_ctx.get_object_count():
             objects_array = ix.api.OfObjectArray(sub_ctx.get_object_count())
@@ -662,7 +664,7 @@ def toggle_map_file_stream(tx, **kwargs):
             logging.debug("Creating reorder node...")
             reorder_tx = ix.cmds.CreateObject(tx_name + SINGLE_CHANNEL_SUFFIX, "TextureReorder",
                                               "Global", str(ctx))
-            ix.cmds.SetValue(str(reorder_tx) + ".channel_order[0]", ["rrrr"])
+            ix.cmds.SetValue(str(reorder_tx) + ".channel_order[0]", ["rrr1"])
             ix.cmds.SetTexture([str(reorder_tx) + ".input"], str(new_tx))
             out_tx = reorder_tx
     elif tx.is_kindof('TextureStreamedMapFile'):
@@ -674,7 +676,7 @@ def toggle_map_file_stream(tx, **kwargs):
         for connected_texture in connected_textures:
             logging.debug(str(connected_texture))
             if connected_texture.is_kindof('TextureReorder'):
-                if connected_texture.attrs.channel_order.attr.get_string() == 'rrrr':
+                if connected_texture.attrs.channel_order.attr.get_string() in ['rrrr','rrr1']:
                     logging.debug('Found matching reorder node')
                     reorder_tx = connected_texture
                     delete_items.append(str(reorder_tx))
@@ -782,9 +784,9 @@ def convert_tx(tx, extension, target_folder=None, replace=True, update=False, **
         if platform.system().lower() == "windows":
             executable_name += '.exe'
         elif platform.system().lower().startswith("linux"):
-            os.environ['LD_LIBRARY_PATH'] = os.path.normpath(os.path.join(clarisse_dir, executable_name))
+            os.environ['LD_LIBRARY_PATH'] = os.path.normpath(clarisse_dir)
         elif platform.system().lower() == "darwin":
-            os.environ['DYLD_LIBRARY_PATH'] = os.path.normpath(os.path.join(clarisse_dir, executable_name))
+            os.environ['DYLD_LIBRARY_PATH'] = os.path.normpath(clarisse_dir)
 
         if not tx.is_kindof('TextureStreamedMapFile') and replace:
             tx = toggle_map_file_stream(tx, ix=ix)
@@ -800,9 +802,9 @@ def convert_tx(tx, extension, target_folder=None, replace=True, update=False, **
         if platform.system() == "Windows":
             executable_name += '.exe'
         elif platform.system().lower().startswith("linux"):
-            os.environ['LD_LIBRARY_PATH'] = os.path.normpath(os.path.join(clarisse_dir, executable_name))
+            os.environ['LD_LIBRARY_PATH'] = os.path.normpath(clarisse_dir)
         elif platform.system().lower() == "darwin":
-            os.environ['DYLD_LIBRARY_PATH'] = os.path.normpath(os.path.join(clarisse_dir, executable_name))
+            os.environ['DYLD_LIBRARY_PATH'] = os.path.normpath(clarisse_dir)
         converter_path = os.path.normpath(os.path.join(clarisse_dir, executable_name))
         command_arguments['converter'] = converter_path
         command_string = r'"{converter}" --threads 0 "{old_file}" "{new_file}"'
