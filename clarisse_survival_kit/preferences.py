@@ -100,7 +100,7 @@ def preferences_gui(**kwargs):
         ui_id += 1
         if preferences[pref_id]['kind'] == bool:
             input_field = ix.api.GuiCheckbox(panel, 10, vertical_spacing * ui_id, "")
-            input_field.set_value(get_preference(key, 0))
+            input_field.set_value(get_preference(key, False))
             event_rewire.connect(input_field, 'EVT_ID_CHECKBOX_CLICK',
                                  event_rewire.enable_apply_buttons)
         else:
