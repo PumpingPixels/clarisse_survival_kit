@@ -11,12 +11,7 @@ def preferences_list():
         {'key': 'combiner_context', 'description': 'Context for collect combiners containig 3d assets',
          'kind': 'OfContext'})
     preferences.append(
-        {'key': 'megascans_surface_context', 'description': 'Context for imported Megascans surfaces',
-         'kind': 'OfContext'})
-    preferences.append(
-        {'key': 'megascans_3d_context', 'description': 'Context for imported Megascans 3D asset', 'kind': 'OfContext'})
-    preferences.append(
-        {'key': 'megascans_3dplant_context', 'description': 'Context for imported Megascans 3D plants',
+        {'key': 'megascans_import_context', 'description': 'Context for imported Megascans assets',
          'kind': 'OfContext'})
     return preferences
 

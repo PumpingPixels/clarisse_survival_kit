@@ -21,6 +21,17 @@ def inspect_asset(asset_directory):
 
 def import_asset(asset_directory, report=None, **kwargs):
     ix = get_ix(kwargs.get('ix'))
+    from clarisse_survival_kit.preferences import get_preference
+    if get_preference('override_bridge_settings', ix=ix):
+        kwargs.pop('resolution')
+        kwargs.pop('lod')
+    megascans_import_context = get_preference('megascans_import_context', ix=ix)
+    if megascans_import_context:
+        try:
+            if isinstance(ix.get_item(megascans_import_context), ix.api.OfContext):
+                kwargs['target_ctx'] = ix.get_item(megascans_import_context)
+        except LookupError:
+            ix.log_warning('Invalid megascans import context set in preferences: {}'.format(megascans_import_context))
     asset_directory = os.path.join(os.path.normpath(asset_directory), '')
     if not report:
         report = inspect_asset(asset_directory)
