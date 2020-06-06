@@ -202,7 +202,7 @@ versions = ['3.5', '3.6', '4.0']
 
 setup(
     name=package_name,
-    version="1.0.0",
+    version="1.0.1",
     author="Aydin Yanik",
     author_email="aydinyanik@gmail.com",
     description="Provides utility functions to import common assets such as Megascans assets and Substance textures.",

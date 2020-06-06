@@ -33,6 +33,8 @@ def import_asset(asset_directory, report=None, **kwargs):
         except LookupError:
             ix.log_warning('Invalid megascans import context set in preferences: {}'.format(megascans_import_context))
     asset_directory = os.path.join(os.path.normpath(asset_directory), '')
+    kwargs['megascans_naming'] = get_preference('megascans_naming', '{dirname}', ix=ix)
+    kwargs['dirname'] = os.path.basename(os.path.normpath(asset_directory))
     if not report:
         report = inspect_asset(asset_directory)
     if report:
@@ -78,7 +80,7 @@ def import_surface(asset_directory, target_ctx=None, ior=DEFAULT_IOR, projection
     scan_area = json_data.get('scan_area', DEFAULT_UV_SCALE)
     logging.debug('Scan area JSON test: ' + str(scan_area))
     tileable = json_data.get('tileable', True)
-    asset_name = os.path.basename(os.path.normpath(asset_directory))
+    asset_name = kwargs['megascans_naming'].format(**json_data)
     logging.debug('Asset name: ' + asset_name)
     if scan_area[0] >= 2 and scan_area[1] >= 2:
         height = 0.2
@@ -440,6 +442,11 @@ def get_json_data_from_directory(directory):
                         data['type'] = 'atlas'
                     if '3dplant' in categories:
                         data['type'] = '3dplant'
+                data['id'] = json_data.get('id')
+                data['name'] = json_data.get('name')
+                pack = json_data.get('pack')
+                if pack:
+                    data['pack_name'] = pack.get('name')
                 if meta_data:
                     for md in meta_data:
                         if md['key'] == "height":
