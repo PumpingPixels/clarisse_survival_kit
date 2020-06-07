@@ -8,6 +8,7 @@ import bisect
 from clarisse_survival_kit.settings import *
 from clarisse_survival_kit.utility import *
 from clarisse_survival_kit.surface import Surface
+from clarisse_survival_kit.preferences import get_preference
 
 
 def inspect_asset(asset_directory):
@@ -21,19 +22,17 @@ def inspect_asset(asset_directory):
 
 def import_asset(asset_directory, report=None, **kwargs):
     ix = get_ix(kwargs.get('ix'))
-    from clarisse_survival_kit.preferences import get_preference
     if get_preference('override_bridge_settings', ix=ix):
         kwargs.pop('resolution')
         kwargs.pop('lod')
-    megascans_import_context = get_preference('megascans_import_context', ix=ix)
-    if megascans_import_context:
-        try:
-            if isinstance(ix.get_item(megascans_import_context), ix.api.OfContext):
-                kwargs['target_ctx'] = ix.get_item(megascans_import_context)
-        except LookupError:
-            ix.log_warning('Invalid megascans import context set in preferences: {}'.format(megascans_import_context))
     asset_directory = os.path.join(os.path.normpath(asset_directory), '')
     kwargs['megascans_naming'] = get_preference('megascans_naming', '{dirname}', ix=ix)
+    megascans_import_context = get_item(get_preference('megascans_import_context', '', ix=ix), ix=ix)
+    if isinstance(megascans_import_context, ix.api.OfContext):
+        kwargs['target_ctx'] = megascans_import_context
+    global_shading_layer = get_item(get_preference('global_shading_layer', ix=ix), ix=ix)
+    if global_shading_layer and global_shading_layer.is_kindof('ShadingLayer'):
+            kwargs['global_shading_layer'] = global_shading_layer
     kwargs['dirname'] = os.path.basename(os.path.normpath(asset_directory))
     if not report:
         report = inspect_asset(asset_directory)
@@ -199,6 +198,9 @@ def import_3d(asset_directory, target_ctx=None, lod=None, resolution=None, clip_
     if surface.get('opacity') and clip_opacity:
         ix.cmds.SetShadingLayerRulesProperty(str(shading_layer), [0], "clip_map",
                                              [str(surface.get('opacity'))])
+    if 'global_shading_layer' in kwargs:
+        ix.cmds.AddValues(['project://{gsl}.children_shading_layers'.format(gsl=kwargs['global_shading_layer'])],
+            [shading_layer])
     logging.debug("...done creating shading layers and importing 3d object.")
     logging.debug("********************************************************")
 
@@ -254,6 +256,9 @@ def import_atlas(asset_directory, target_ctx=None, lod=None, clip_opacity=True, 
         if surface.get('displacement'):
             ix.cmds.SetShadingLayerRulesProperty(str(shading_layer), [0], "displacement",
                                                  [str(surface.get('displacement_map'))])
+    if 'global_shading_layer' in kwargs:
+        ix.cmds.AddValues(['project://{gsl}.children_shading_layers'.format(gsl=kwargs['global_shading_layer'])],
+            [shading_layer])
     logging.debug("...done setting up shading layer")
     logging.debug("Setting up group: ")
     group = ix.cmds.CreateObject(asset_name + GROUP_SUFFIX, "Group", "Global", str(ctx))
@@ -403,6 +408,9 @@ def import_3dplant(asset_directory, target_ctx=None, ior=DEFAULT_IOR, object_spa
         ix.cmds.AddValues([group.get_full_name() + ".filter"], ["GeometryAbcMesh"])
         ix.cmds.AddValues([group.get_full_name() + ".filter"], ["GeometryPolyfile"])
         ix.cmds.RemoveValue([group.get_full_name() + ".filter"], [2, 0, 1])
+    if 'global_shading_layer' in kwargs:
+        ix.cmds.AddValues(['project://{gsl}.children_shading_layers'.format(gsl=kwargs['global_shading_layer'])],
+            [shading_layer])
 
     logging.debug("...done setting up shading rules, groups and 3d plant")
     logging.debug("*****************************************************")

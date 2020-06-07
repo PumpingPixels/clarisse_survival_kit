@@ -873,3 +873,15 @@ def convert_tx(tx, extension, target_folder=None, replace=True, update=False, **
     if replace:
         tx.attrs.filename = os.path.normpath(new_file_path)
     return tx
+
+
+def get_item(path, **kwargs):
+    """
+    Convinience function to get an item by its path within Clarisse catching the LookupError to return None.
+    """
+    ix = get_ix(kwargs.get("ix"))
+    try:
+        item = ix.get_item(path)
+        return item
+    except LookupError:
+        return None
