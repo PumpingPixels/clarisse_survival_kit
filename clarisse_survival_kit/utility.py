@@ -333,6 +333,36 @@ def get_sub_contexts(ctx, name="", max_depth=0, current_depth=0, **kwargs):
     return results
 
 
+def create_context(ctx, **kwargs):
+    """
+    Creates a context at the given path if it doesn't exist.
+    """
+    ix = get_ix(kwargs.get("ix"))
+    ctx = str(ctx)
+    ctx = ctx.replace('project://', '')
+    ctx_split = ctx.split('/')
+    current = ''
+    for context in ctx_split:
+        try:
+            to_return = ix.get_item('project://{}/{}'.format(current, context))
+        except LookupError:
+            to_return = ix.cmds.CreateContext(context, 'Global', 'project://{}'.format(current))
+        current += '{}/'.format(context)
+    return to_return
+
+
+def get_item(item, **kwargs):
+    """
+    Convenience function to get an item by its path within Clarisse catching the LookupError to return None.
+    """
+    ix = get_ix(kwargs.get("ix"))
+    try:
+        item = ix.get_item(item)
+        return item
+    except LookupError:
+        return None
+
+
 def get_items(ctx, kind=(), max_depth=0, return_first_hit=False, **kwargs):
     """Gets all items recursively."""
     ix = get_ix(kwargs.get("ix"))
@@ -873,15 +903,3 @@ def convert_tx(tx, extension, target_folder=None, replace=True, update=False, **
     if replace:
         tx.attrs.filename = os.path.normpath(new_file_path)
     return tx
-
-
-def get_item(path, **kwargs):
-    """
-    Convinience function to get an item by its path within Clarisse catching the LookupError to return None.
-    """
-    ix = get_ix(kwargs.get("ix"))
-    try:
-        item = ix.get_item(path)
-        return item
-    except LookupError:
-        return None

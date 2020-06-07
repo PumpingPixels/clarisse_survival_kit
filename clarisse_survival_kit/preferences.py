@@ -5,7 +5,7 @@ def preferences_list():
     preferences = []
     preferences.append(
         {'key': 'megascans_naming', 'description': 'Customize naming convention for imported Megascans assets',
-         'kind': str})
+         'kind': str, 'default': '{dirname}'})
     preferences.append(
         {'key': 'megascans_import_context', 'description': 'Top-level context to store imported Megascans assets',
          'kind': 'OfContext'})
@@ -14,7 +14,7 @@ def preferences_list():
          'kind': 'OfContext'})
     preferences.append({'key': 'global_shading_layer', 'description': 'Global Shading Layer', 'kind': 'ShadingLayer'})
     preferences.append({'key': 'override_bridge_settings',
-                        'description': "Override Bridge's export settings to highest available resolution and LOD",
+                        'description': "Override Bridge's export settings (use highest available resolution and LOD)",
                         'kind': bool})
     return preferences
 
@@ -54,7 +54,10 @@ def preferences_gui(**kwargs):
             self.enable_apply_buttons(sender, evtid)
 
         def clear_preference(self, sender, evtid, id):
-            input_fields[id].set_text('')
+            if isinstance(input_fields[id], ix.api.GuiCheckbox):
+                input_fields[id].set_value(preferences_list()[id].get('default', False))
+            elif isinstance(input_fields[id], ix.api.GuiLineEdit):
+                input_fields[id].set_text(preferences_list()[id].get('default', ''))
             ok_button.enable()
             apply_button.enable()
 
@@ -103,12 +106,12 @@ def preferences_gui(**kwargs):
         ui_id += 1
         if preferences[pref_id]['kind'] == bool:
             input_field = ix.api.GuiCheckbox(panel, 10, vertical_spacing * ui_id, "")
-            input_field.set_value(get_preference(key, False))
+            input_field.set_value(get_preference(key, preferences_list()[pref_id].get('default', False)))
             event_rewire.connect(input_field, 'EVT_ID_CHECKBOX_CLICK',
                                  event_rewire.enable_apply_buttons)
         else:
             input_field = ix.api.GuiLineEdit(panel, 10, vertical_spacing * ui_id, 340, 22)
-            input_field.set_text(get_preference(key, ''))
+            input_field.set_text(get_preference(key, preferences_list()[pref_id].get('default', '')))
             event_rewire.connect(input_field, 'EVT_ID_LINE_EDIT_VALUE_EDITED',
                                  event_rewire.enable_apply_buttons)
         input_fields.append(input_field)
@@ -116,7 +119,7 @@ def preferences_gui(**kwargs):
             set_buttons.append(GuiPushButton('set_{id}'.format(id=pref_id), panel, 360,
                                              vertical_spacing * ui_id, 100, 22, "Set to selected"))
         clear_buttons.append(GuiPushButton('clear_{id}'.format(id=pref_id), panel, 470,
-                                           vertical_spacing * ui_id, 60, 22, "Clear"))
+                                           vertical_spacing * ui_id, 60, 22, "Default"))
         ui_id += 1
     ui_id += 3
     ok_button = ix.api.GuiPushButton(panel, 220, vertical_spacing * ui_id, 95, 22, "OK")

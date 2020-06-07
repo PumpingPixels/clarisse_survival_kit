@@ -27,9 +27,7 @@ def import_asset(asset_directory, report=None, **kwargs):
         kwargs.pop('lod')
     asset_directory = os.path.join(os.path.normpath(asset_directory), '')
     kwargs['megascans_naming'] = get_preference('megascans_naming', '{dirname}', ix=ix)
-    megascans_import_context = get_item(get_preference('megascans_import_context', '', ix=ix), ix=ix)
-    if isinstance(megascans_import_context, ix.api.OfContext):
-        kwargs['target_ctx'] = megascans_import_context
+    kwargs['target_ctx'] = get_preference('megascans_import_context', '', ix=ix)
     global_shading_layer = get_item(get_preference('global_shading_layer','' , ix=ix), ix=ix)
     if global_shading_layer and global_shading_layer.is_kindof('ShadingLayer'):
             kwargs['global_shading_layer'] = global_shading_layer
@@ -58,6 +56,7 @@ def import_surface(asset_directory, target_ctx=None, ior=DEFAULT_IOR, projection
     ix = get_ix(kwargs.get('ix'))
     if not target_ctx:
         target_ctx = ix.application.get_working_context()
+    target_ctx = create_context(target_ctx, ix=ix)
     if not check_context(target_ctx, ix=ix):
         return None
     if not os.path.isdir(asset_directory):
