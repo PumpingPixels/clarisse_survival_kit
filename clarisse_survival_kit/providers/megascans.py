@@ -30,10 +30,9 @@ def import_asset(asset_directory, report=None, **kwargs):
     megascans_import_context = get_item(get_preference('megascans_import_context', '', ix=ix), ix=ix)
     if isinstance(megascans_import_context, ix.api.OfContext):
         kwargs['target_ctx'] = megascans_import_context
-    global_shading_layer = get_item(get_preference('global_shading_layer', ix=ix), ix=ix)
+    global_shading_layer = get_item(get_preference('global_shading_layer','' , ix=ix), ix=ix)
     if global_shading_layer and global_shading_layer.is_kindof('ShadingLayer'):
             kwargs['global_shading_layer'] = global_shading_layer
-    kwargs['dirname'] = os.path.basename(os.path.normpath(asset_directory))
     if not report:
         report = inspect_asset(asset_directory)
     if report:
@@ -470,6 +469,7 @@ def get_json_data_from_directory(directory):
                             # getting average intensity, using 260 as max RGB since that's what Megascans is doing
                             data['displacement_offset'] = ((mp['maxIntensity'] + mp['minIntensity']) * 0.5) / 260.0
             break
+    data['dirname'] = os.path.basename(os.path.normpath(directory))
     return data
 
 

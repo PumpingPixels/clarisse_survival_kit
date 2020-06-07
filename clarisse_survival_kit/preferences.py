@@ -3,18 +3,19 @@ from clarisse_survival_kit.utility import *
 
 def preferences_list():
     preferences = []
-    preferences.append({'key': 'override_bridge_settings',
-                        'description': 'Override Bridge Export settings to highest available quality', 'kind': bool})
-    preferences.append({'key': 'global_shading_layer', 'description': 'Global Shading Layer', 'kind': 'ShadingLayer'})
     preferences.append(
-        {'key': 'combiner_context', 'description': 'Context collecting Megascans 3d asset combiners',
-         'kind': 'OfContext'})
+        {'key': 'megascans_naming', 'description': 'Customize naming convention for imported Megascans assets',
+         'kind': str})
     preferences.append(
         {'key': 'megascans_import_context', 'description': 'Top-level context to store imported Megascans assets',
          'kind': 'OfContext'})
     preferences.append(
-        {'key': 'megascans_naming', 'description': 'Customize naming convention for imported Megascans assets',
-         'kind': str})
+        {'key': 'combiner_context', 'description': 'Context collecting Megascans 3d asset combiners',
+         'kind': 'OfContext'})
+    preferences.append({'key': 'global_shading_layer', 'description': 'Global Shading Layer', 'kind': 'ShadingLayer'})
+    preferences.append({'key': 'override_bridge_settings',
+                        'description': "Override Bridge's export settings to highest available resolution and LOD",
+                        'kind': bool})
     return preferences
 
 
