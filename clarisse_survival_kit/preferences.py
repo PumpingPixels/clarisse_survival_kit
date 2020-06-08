@@ -1,3 +1,5 @@
+import ix
+
 from clarisse_survival_kit.utility import *
 
 
@@ -17,27 +19,6 @@ def preferences_list():
                         'description': "Override Bridge's export settings (use highest available resolution and LOD)",
                         'kind': bool})
     return preferences
-
-
-# class TerrainGui(ix.api.GuiWindow):
-#     def __init__(self, title, x, y, w, h):
-#         super(TerrainGui, self).__init__(ix.application.get_event_window(), x, y, w, h)
-#         self.set_title(title)
-#         self.panel = ix.api.GuiPanel(self, 0, 0, self.get_width(), self.get_height())
-#         self.panel.set_constraints(ix.api.GuiWidget.CONSTRAINT_LEFT, ix.api.GuiWidget.CONSTRAINT_TOP,
-#                                    ix.api.GuiWidget.CONSTRAINT_RIGHT, ix.api.GuiWidget.CONSTRAINT_BOTTOM)
-#         self.check_box = ix.api.GuiCheckbox(self.panel, 140, 130, "test")
-#         self.check_box.set_value(True)
-#         self.connect(self.check_box, "EVT_ID_CHECKBOX_CLICK", self.on_event)
-#
-#     def on_event(self, sender, evtid):
-#         print("event received", sender, evtid)
-#
-# window = TerrainGui("Heightmap wizard", 900, 450, 400, 640)
-# window.show()
-# while window.is_shown():
-#     ix.application.check_for_events()
-# window.destroy()
 
 
 class IdentifiedPushButton(ix.api.GuiPushButton):
