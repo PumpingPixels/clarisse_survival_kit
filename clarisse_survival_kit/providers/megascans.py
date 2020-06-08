@@ -22,18 +22,19 @@ def inspect_asset(asset_directory):
 
 def import_asset(asset_directory, report=None, **kwargs):
     ix = get_ix(kwargs.get('ix'))
+    if not report:
+        report = inspect_asset(asset_directory)
     if get_preference('override_bridge_settings', ix=ix):
         kwargs.pop('resolution')
         kwargs.pop('lod')
     asset_directory = os.path.join(os.path.normpath(asset_directory), '')
-    kwargs['megascans_naming'] = get_preference('megascans_naming', '{dirname}', ix=ix)
-    kwargs['target_ctx'] = get_preference('megascans_import_context', '', ix=ix)
-    global_shading_layer = get_item(get_preference('global_shading_layer','' , ix=ix), ix=ix)
+    kwargs['megascans_naming'] = get_preference('megascans_naming', '{dirname}', ix=ix).format(**report)
+    kwargs['target_ctx'] = get_preference('megascans_import_context', '', ix=ix).format(**report)
+    global_shading_layer = get_item(get_preference('global_shading_layer', '', ix=ix), ix=ix)
     if global_shading_layer and global_shading_layer.is_kindof('ShadingLayer'):
-            kwargs['global_shading_layer'] = global_shading_layer
-    if not report:
-        report = inspect_asset(asset_directory)
+        kwargs['global_shading_layer'] = global_shading_layer
     if report:
+        kwargs['report'] = report
         if not kwargs.get('color_spaces'):
             kwargs['color_spaces'] = get_color_spaces(MEGASCANS_COLOR_SPACES, ix=ix)
         asset_type = report.get('type')
@@ -77,7 +78,7 @@ def import_surface(asset_directory, target_ctx=None, ior=DEFAULT_IOR, projection
     scan_area = json_data.get('scan_area', DEFAULT_UV_SCALE)
     logging.debug('Scan area JSON test: ' + str(scan_area))
     tileable = json_data.get('tileable', True)
-    asset_name = kwargs['megascans_naming'].format(**json_data)
+    asset_name = kwargs['megascans_naming']
     logging.debug('Asset name: ' + asset_name)
     if scan_area[0] >= 2 and scan_area[1] >= 2:
         height = 0.2
@@ -110,7 +111,7 @@ def import_surface(asset_directory, target_ctx=None, ior=DEFAULT_IOR, projection
     return surface
 
 
-def import_3d(asset_directory, target_ctx=None, lod=None, resolution=None, clip_opacity=True, **kwargs):
+def import_3d(asset_directory, target_ctx=None, lod=None, resolution=None, clip_opacity=True, report={}, **kwargs):
     """Imports a Megascans 3D object."""
     ix = get_ix(kwargs.get('ix'))
     logging.debug("*******************************")
@@ -128,6 +129,7 @@ def import_3d(asset_directory, target_ctx=None, lod=None, resolution=None, clip_
 
     files = [f for f in os.listdir(asset_directory) if os.path.isfile(os.path.join(asset_directory, f))]
     lod_files = {}
+    geometry = None
     for f in files:
         filename, extension = os.path.splitext(f)
         if extension.lower() == ".obj":
@@ -151,7 +153,7 @@ def import_3d(asset_directory, target_ctx=None, lod=None, resolution=None, clip_
                     item.attrs.scale_offset[0] = .01
                     item.attrs.scale_offset[1] = .01
                     item.attrs.scale_offset[2] = .01
-
+            geometry = abc_reference
     if lod_files:
         logging.debug('Lod files:')
         logging.debug(str(lod_files))
@@ -183,6 +185,13 @@ def import_3d(asset_directory, target_ctx=None, lod=None, resolution=None, clip_
                     if not filename.endswith("_High") and surface.get('displacement'):
                         logging.debug('Applying displacement map')
                         geo.assign_displacement(surface.get('displacement_map').get_module(), i)
+                geometry = polyfile
+
+    if geometry:
+        logging.debug("Creating combiner..")
+        combiner_ctx = get_preference('combiner_context', str(ctx), ix=ix).format(**report)
+        ix.cmds.CombineItems([str(geometry)], combiner_ctx)
+        ix.cmds.RenameItem("{combiner_ctx}/combiner".format(combiner_ctx=combiner_ctx), asset_name)
 
     logging.debug("Creating shading layers..")
     shading_layer = ix.cmds.CreateObject(asset_name + SHADING_LAYER_SUFFIX, "ShadingLayer", "Global",
@@ -198,12 +207,13 @@ def import_3d(asset_directory, target_ctx=None, lod=None, resolution=None, clip_
                                              [str(surface.get('opacity'))])
     if 'global_shading_layer' in kwargs:
         ix.cmds.AddValues(['project://{gsl}.children_shading_layers'.format(gsl=kwargs['global_shading_layer'])],
-            [shading_layer])
+                          [shading_layer])
     logging.debug("...done creating shading layers and importing 3d object.")
     logging.debug("********************************************************")
 
 
-def import_atlas(asset_directory, target_ctx=None, lod=None, clip_opacity=True, resolution=None, use_displacement=True, **kwargs):
+def import_atlas(asset_directory, target_ctx=None, lod=None, clip_opacity=True, resolution=None, use_displacement=True,
+                 **kwargs):
     """Imports a Megascans 3D object."""
     ix = get_ix(kwargs.get('ix'))
     logging.debug("*******************")
@@ -256,7 +266,7 @@ def import_atlas(asset_directory, target_ctx=None, lod=None, clip_opacity=True, 
                                                  [str(surface.get('displacement_map'))])
     if 'global_shading_layer' in kwargs:
         ix.cmds.AddValues(['project://{gsl}.children_shading_layers'.format(gsl=kwargs['global_shading_layer'])],
-            [shading_layer])
+                          [shading_layer])
     logging.debug("...done setting up shading layer")
     logging.debug("Setting up group: ")
     group = ix.cmds.CreateObject(asset_name + GROUP_SUFFIX, "Group", "Global", str(ctx))
@@ -280,6 +290,7 @@ def import_3dplant(asset_directory, target_ctx=None, ior=DEFAULT_IOR, object_spa
     # Let's first find the textures of the Atlas and create the material.
     if not target_ctx:
         target_ctx = ix.application.get_working_context()
+    target_ctx = create_context(target_ctx, ix=ix)
     if not check_context(target_ctx, ix=ix):
         return None
     asset_directory = os.path.normpath(asset_directory)
@@ -300,7 +311,7 @@ def import_3dplant(asset_directory, target_ctx=None, ior=DEFAULT_IOR, object_spa
     scan_area = json_data.get('scan_area', DEFAULT_UV_SCALE)
     logging.debug("Scan area JSON test: " + str(scan_area))
     tileable = json_data.get('tileable', True)
-    asset_name = os.path.basename(os.path.normpath(asset_directory))
+    asset_name = kwargs['megascans_naming']
     logging.debug("Asset name: " + asset_name)
     logging.debug(os.path.join(asset_directory, 'Textures/Atlas/'))
     atlas_textures = get_textures_from_directory(os.path.join(asset_directory, 'Textures/Atlas/'),
@@ -408,7 +419,7 @@ def import_3dplant(asset_directory, target_ctx=None, ior=DEFAULT_IOR, object_spa
         ix.cmds.RemoveValue([group.get_full_name() + ".filter"], [2, 0, 1])
     if 'global_shading_layer' in kwargs:
         ix.cmds.AddValues(['project://{gsl}.children_shading_layers'.format(gsl=kwargs['global_shading_layer'])],
-            [shading_layer])
+                          [shading_layer])
 
     logging.debug("...done setting up shading rules, groups and 3d plant")
     logging.debug("*****************************************************")

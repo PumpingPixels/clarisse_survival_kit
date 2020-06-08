@@ -343,6 +343,7 @@ def create_context(ctx, **kwargs):
     ctx_split = ctx.split('/')
     current = ''
     for context in ctx_split:
+        context = re.sub(r'(^[0-9])', r'_\1', context) # names can't start with an underscore
         try:
             to_return = ix.get_item('project://{}/{}'.format(current, context))
         except LookupError:

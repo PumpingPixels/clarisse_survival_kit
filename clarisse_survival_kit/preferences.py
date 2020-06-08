@@ -10,7 +10,7 @@ def preferences_list():
         {'key': 'megascans_import_context', 'description': 'Top-level context to store imported Megascans assets',
          'kind': 'OfContext'})
     preferences.append(
-        {'key': 'combiner_context', 'description': 'Context collecting Megascans 3d asset combiners',
+        {'key': 'combiner_context', 'description': 'Context for collecting combiners containing 3d assets',
          'kind': 'OfContext'})
     preferences.append({'key': 'global_shading_layer', 'description': 'Global Shading Layer', 'kind': 'ShadingLayer'})
     preferences.append({'key': 'override_bridge_settings',
@@ -25,7 +25,7 @@ def preferences_gui(**kwargs):
 
     class EventRewire(ix.api.EventObject):
         def ok(self, sender, evtid):
-            self.apply(self, sender, evtid)
+            self.apply(sender, evtid)
             sender.get_window().hide()
 
         def apply(self, sender, evtid):
@@ -159,9 +159,10 @@ def get_preference(key, default=None, **kwargs):
         if preferences.get_item_value_type("clarisse_survival_kit", key) == 0:
             return preferences.get_bool_value("clarisse_survival_kit", key)
         elif preferences.get_item_value_type("clarisse_survival_kit", key) == 3:
-            return preferences.get_string_value("clarisse_survival_kit", key)
-    else:
-        return default
+            value = preferences.get_string_value("clarisse_survival_kit", key)
+            if value:
+                return value
+    return default
 
 
 def get_ix(ix_local):
